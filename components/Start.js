@@ -1,5 +1,7 @@
 import React, { Component } from 'react';
-import { StyleSheet, ImageBackground, Text, TextInput, Alert, TouchableOpacity, Button, View } from 'react-native';
+import { GiftedChat } from 'react-native-gifted-chat'
+import Platform from 'react-native'
+import { StyleSheet, ImageBackground, Text, TextInput, Alert, TouchableOpacity, Button, View, ScrollView } from 'react-native';
 
 export default class Start extends React.Component {
 
@@ -18,6 +20,8 @@ export default class Start extends React.Component {
         <Text style={styles.title}>Chat App</Text>
         <View style={styles.container}>
           <TextInput style={styles.nameBox}
+            accessible={true}
+            accessibilityLabel='Input name'
             onChangeText={(name) => this.setState({ name })}
             value={this.state.name}
             placeholder='Your Name'
@@ -44,11 +48,14 @@ export default class Start extends React.Component {
             />
           </View>
           <Button
+            accessible={true}
+            accessibilityLabel="start chatting"
             style={styles.chatButton}
             title="Start Chatting"
             onPress={() => this.props.navigation.navigate('Chat', { name: this.state.name, color: this.state.color })}
           />
         </View>
+        {Platform.OS === 'android' ? <KeyboardSpacer /> : null}
       </ImageBackground>
     );
   }
@@ -127,6 +134,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: '#FFFFFF',
     width: '88%',
-    margin: 50
+    marginBottom: 50,
   },
 });
