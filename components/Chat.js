@@ -9,34 +9,25 @@ export default class Chat extends React.Component {
 
   constructor() {
     super();
+    if (!firebase.apps.length) {
+      firebase.initializeApp({
+        apiKey: "AIzaSyDIVBDt0W3t0UVpotXQbhj7GeX4khPAgKk",
+        authDomain: "chatapp-78617.firebaseapp.com",
+        databaseURL: "https://chatapp-78617.firebaseio.com",
+        projectId: "chatapp-78617",
+        storageBucket: "chatapp-78617.appspot.com",
+        messagingSenderId: "967149298342",
+        appId: "1:967149298342:web:a59ab9e170511b9f564a67",
+        measurementId: "G-2K4CQY79QF"
+      })
+    }
+    this.referenceMessageUser = null;
+    this.referenceMessages = firebase.firestore().collection('messages')
 
     this.state = {
       messages: [],
-      uid: 0,
-      user: {
-        _id: '',
-        name: '',
-        avatar: ''
-      }
+      uid: 0
     };
-
-    var firebaseConfig = {
-      apiKey: "AIzaSyDIVBDt0W3t0UVpotXQbhj7GeX4khPAgKk",
-      authDomain: "chatapp-78617.firebaseapp.com",
-      databaseURL: "https://chatapp-78617.firebaseio.com",
-      projectId: "chatapp-78617",
-      storageBucket: "chatapp-78617.appspot.com",
-      messagingSenderId: "967149298342",
-      appId: "1:967149298342:web:a59ab9e170511b9f564a67",
-      measurementId: "G-2K4CQY79QF"
-    };
-
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
-
-    this.referenceMessages = firebase.firestore().collection('messages')
-
   }
 
   //this will put the users name in navigation bar
@@ -112,7 +103,7 @@ export default class Chat extends React.Component {
   }
 
   addMessage() {
-    console.log(this.state.user)
+    console.log(this.state.messages[0].user)
     this.referenceMessages.add({
       _id: this.state.messages[0]._id,
       text: this.state.messages[0].text || '',
@@ -142,7 +133,7 @@ export default class Chat extends React.Component {
       messages.push({
         _id: data._id,
         text: data.text,
-        createdAt: data.Date,
+        createdAt: data.createdAt.toDate(),
         user: data.user,
         image: data.image,
       });
@@ -164,12 +155,6 @@ export default class Chat extends React.Component {
       />
     )
   }
-
-
-
-
-
-
 
   render() {
     return (
