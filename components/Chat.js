@@ -93,7 +93,7 @@ export default class Chat extends React.Component {
     // Go through each document
     querySnapshot.forEach(doc => {
       // Get queryDocumentSnapshot's data
-      var data = doc.data();
+      let data = doc.data();
       messages.push({
         _id: data._id,
         text: data.text || '',
@@ -123,7 +123,7 @@ export default class Chat extends React.Component {
   };
   // Get messages from local(async) storage
   async getMessages() {
-    var messages = [];
+    const messages = [];
     try {
       messages = await AsyncStorage.getItem('messages') || [];
       this.setState({
@@ -188,7 +188,7 @@ export default class Chat extends React.Component {
 
   // Custom view display when the message contains location
   renderCustomView(props) {
-    var { currentMessage } = props;
+    let { currentMessage } = props;
     if (currentMessage.location) {
       return (
         <MapView
