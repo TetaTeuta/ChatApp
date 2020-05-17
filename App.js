@@ -5,11 +5,12 @@ import { createStackNavigator } from 'react-navigation-stack';
 
 const navigator = createStackNavigator({
   Start: {
-    screen: Start, navigationOptions: {
+    screen: Start,
+    navigationOptions: {
       headerShown: false,
     },
   },
-  Chat: { screen: Chat }
+  Chat: { screen: Chat },
 });
 
 const navigatorContainer = createAppContainer(navigator);
