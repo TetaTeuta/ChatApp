@@ -1,13 +1,20 @@
-import React, { Component } from 'react';
-import { View, StyleSheet, Platform, AsyncStorage } from 'react-native';
+import React from 'react';
+import { View, StyleSheet, AsyncStorage } from 'react-native';
 import KeyboardSpacer from 'react-native-keyboard-spacer';
 import { GiftedChat, Bubble, InputToolbar } from 'react-native-gifted-chat';
 import NetInfo from '@react-native-community/netinfo';
+import CustomActions from './CustomActions';
+import { MapView } from 'react-native-maps';
+
 import firebase from 'firebase';
 import 'firebase/firestore';
-export default class Chat extends Component {
+
+console.disableYellowBox = true;
+
+export default class Chat extends React.Component {
   constructor() {
     super();
+
     this.state = {
       messages: [],
       user: {
@@ -16,6 +23,7 @@ export default class Chat extends Component {
         avatar: '',
       },
       isConnected: false,
+      image: null,
     };
     // Firebase init
     if (!firebase.apps.length) {
@@ -79,6 +87,7 @@ export default class Chat extends Component {
     // Stop listening for changes
     this.unsubscribe();
   };
+  // Update the message state with input data 
   onCollectionUpdate = (querySnapshot) => {
     const messages = [];
     // Go through each document
@@ -90,6 +99,9 @@ export default class Chat extends Component {
         text: data.text || '',
         createdAt: data.createdAt.toDate(),
         user: data.user,
+        image: data.image || '',
+        location: data.location || null,
+        sent: true,
       });
     });
     this.setState({
@@ -104,11 +116,14 @@ export default class Chat extends Component {
       text: message.text || '',
       createdAt: message.createdAt,
       user: this.state.user,
+      image: message.image || '',
+      location: message.location || null,
+      sent: true,
     });
   };
   // Get messages from local(async) storage
   async getMessages() {
-    let messages = [];
+    var messages = [];
     try {
       messages = await AsyncStorage.getItem('messages') || [];
       this.setState({
@@ -155,6 +170,7 @@ export default class Chat extends Component {
   };
   // Change message bubble color
   renderBubble(props) {
+
     return (
       <Bubble
         {...props}
@@ -169,6 +185,34 @@ export default class Chat extends Component {
       />
     );
   };
+
+  // Custom view display when the message contains location
+  renderCustomView(props) {
+    var { currentMessage } = props;
+    if (currentMessage.location) {
+      return (
+        <MapView
+          style={{
+            width: 150,
+            height: 100,
+            borderRadius: 13,
+            margin: 3
+          }}
+          region={{
+            latitude: currentMessage.location.latitude,
+            longitude: currentMessage.location.longitude,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421,
+          }}
+        />
+      );
+    }
+    return null;
+  }
+
+  // Render custom actions in inputToolbar
+  renderCustomActions = (props) => <CustomActions {...props} />;
+
   render() {
     return (
       <View style={[
@@ -177,16 +221,18 @@ export default class Chat extends Component {
       ]}>
         <GiftedChat
           scrollToBottom
+          renderAvatarOnTop
           showUserAvatar={true}
           user={this.state.user}
           messages={this.state.messages}
           renderUsernameOnMessage={true}
           showAvatarForEveryMessage={true}
+          renderCustomView={this.renderCustomView}
           renderActions={this.renderCustomActions}
           onSend={messages => this.onSend(messages)}
           renderBubble={this.renderBubble.bind(this)}
           renderInputToolbar={this.renderInputToolbar.bind(this)}
-          timeTextStyle={{ left: { color: '#F5F5F5' }, right: { color: '#F5F5F5' } }}
+          timeTextStyle={{ left: { color: '#FFF' }, right: { color: '#FFF' } }}
         />
         {/* {Platform.OS === 'android' ? <KeyboardSpacer /> : null} */}
       </View>
@@ -198,5 +244,13 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#FFFFFF',
     backgroundColor: '#000000',
-  }
+  },
+  mapContainer: {
+    width: 250,
+    height: 200,
+    borderRadius: 13,
+    margin: 1,
+    //width: Dimensions.get('window').width,
+    //height: Dimensions.get('window').height,
+  },
 });
