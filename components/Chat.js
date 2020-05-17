@@ -1,13 +1,12 @@
 import React from 'react';
-import { View, StyleSheet, AsyncStorage } from 'react-native';
-import KeyboardSpacer from 'react-native-keyboard-spacer';
-import { GiftedChat, Bubble, InputToolbar } from 'react-native-gifted-chat';
-import NetInfo from '@react-native-community/netinfo';
-import CustomActions from './CustomActions';
-import { MapView } from 'react-native-maps';
-
-import firebase from 'firebase';
 import 'firebase/firestore';
+import firebase from 'firebase';
+import CustomActions from './CustomActions';
+import NetInfo from '@react-native-community/netinfo';
+import KeyboardSpacer from 'react-native-keyboard-spacer';
+import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
+import { View, StyleSheet, Platform, AsyncStorage } from 'react-native';
+import { GiftedChat, Bubble, InputToolbar } from 'react-native-gifted-chat';
 
 console.disableYellowBox = true;
 
@@ -25,6 +24,7 @@ export default class Chat extends React.Component {
       isConnected: false,
       image: null,
     };
+
     // Firebase init
     if (!firebase.apps.length) {
       firebase.initializeApp({
@@ -39,25 +39,25 @@ export default class Chat extends React.Component {
       });
     }
     this.referenceMessages = firebase.firestore().collection('messages');
-  }
-  // Set navigation title as username
+  };
+
+  // Set navigation title
   static navigationOptions = ({ navigation }) => {
     return {
       title: navigation.state.params.name
     };
   };
-  // Display elements
+
   componentDidMount() {
     NetInfo.fetch().then(state => {
-      //console.log('Connection type', state.type);
+      // Check if the user is online
       if (state.isConnected) {
-        //console.log('Is connected?', state.isConnected);
         this.authUnsubscribe = firebase.auth().onAuthStateChanged(async user => {
           if (!user) {
             try {
               await firebase.auth().signInAnonymously();
             } catch (error) {
-              console.log('Unable to sign in: ' + error.message);
+              console.log(`Unable to sign in: ${error.message}`);
             }
           }
           this.setState({
@@ -67,13 +67,12 @@ export default class Chat extends React.Component {
               name: this.props.navigation.state.params.name,
               avatar: 'https://placeimg.com/140/140/any',
             },
-            loggedInText: this.props.navigation.state.params.name + ' has entered the chat',
             messages: [],
           });
-          //console.log(user);
           this.unsubscribe = this.referenceMessages.orderBy('createdAt', 'desc').onSnapshot(this.onCollectionUpdate);
         });
       } else {
+        // The user is offline
         this.setState({
           isConnected: false,
         });
@@ -81,19 +80,19 @@ export default class Chat extends React.Component {
       }
     });
   };
+
+  // Stop listening for authentication and changes
   componentWillUnmount() {
-    // Stop listening for authentication
     this.authUnsubscribe();
-    // Stop listening for changes
     this.unsubscribe();
   };
-  // Update the message state with input data 
+
   onCollectionUpdate = (querySnapshot) => {
     const messages = [];
     // Go through each document
     querySnapshot.forEach(doc => {
       // Get queryDocumentSnapshot's data
-      let data = doc.data();
+      var data = doc.data();
       messages.push({
         _id: data._id,
         text: data.text || '',
@@ -108,7 +107,7 @@ export default class Chat extends React.Component {
       messages
     });
   };
-  // Add message
+
   addMessage() {
     const message = this.state.messages[0];
     this.referenceMessages.add({
@@ -121,35 +120,36 @@ export default class Chat extends React.Component {
       sent: true,
     });
   };
-  // Get messages from local(async) storage
+
   async getMessages() {
-    const messages = [];
+    let messages = [];
     try {
       messages = await AsyncStorage.getItem('messages') || [];
       this.setState({
         messages: JSON.parse(messages)
       });
     } catch (error) {
-      console.log(error.message);
+      console.log(`Unable to get messages: ${error.message}`);
     }
   };
-  // Save messages locally(asyncStorage)
+
   async saveMessages() {
     try {
       await AsyncStorage.setItem('messages', JSON.stringify(this.state.messages));
     } catch (error) {
-      console.log(error.message);
+      console.log(`Unable to save messages: ${error.message}`);
     }
   };
-  // Delete messages locally(asyncStorage)
+
   async deleteMessages() {
     try {
       await AsyncStorage.removeItem('messages');
     } catch (error) {
-      console.log(error.message);
+      console.log(`Unable to delete messages: ${error.message}`);
     }
   };
-  // Send message
+
+
   onSend = (messages = []) => {
     this.setState(previousState => ({
       messages: GiftedChat.append(previousState.messages, messages)
@@ -158,7 +158,7 @@ export default class Chat extends React.Component {
       this.saveMessages();
     });
   };
-  // Hide inputbar when offline
+
   renderInputToolbar(props) {
     if (this.state.isConnected) {
       return (
@@ -168,7 +168,7 @@ export default class Chat extends React.Component {
       );
     }
   };
-  // Change message bubble color
+
   renderBubble(props) {
 
     return (
@@ -186,31 +186,35 @@ export default class Chat extends React.Component {
     );
   };
 
-  // Custom view display when the message contains location
   renderCustomView(props) {
-    let { currentMessage } = props;
-    if (currentMessage.location) {
+    const { currentMessage } = props;
+    if (currentMessage ?.location ?.latitude && currentMessage ?.location ?.longitude) {
       return (
         <MapView
-          style={{
-            width: 150,
-            height: 100,
-            borderRadius: 13,
-            margin: 3
-          }}
+          style={styles.mapContainer}
+          provider={PROVIDER_GOOGLE}
+          showsUserLocation={true}
+          loadingEnabled={true}
+          showsCompass={true}
           region={{
             latitude: currentMessage.location.latitude,
             longitude: currentMessage.location.longitude,
-            latitudeDelta: 0.0922,
-            longitudeDelta: 0.0421,
+            latitudeDelta: 0.04,
+            longitudeDelta: 0.05,
           }}
-        />
+        >
+          <MapView.Marker
+            coordinate={{
+              latitude: currentMessage.location.latitude,
+              longitude: currentMessage.location.longitude,
+            }}
+          />
+        </MapView>
       );
     }
     return null;
-  }
+  };
 
-  // Render custom actions in inputToolbar
   renderCustomActions = (props) => <CustomActions {...props} />;
 
   render() {
@@ -234,11 +238,11 @@ export default class Chat extends React.Component {
           renderInputToolbar={this.renderInputToolbar.bind(this)}
           timeTextStyle={{ left: { color: '#FFF' }, right: { color: '#FFF' } }}
         />
-        {/* {Platform.OS === 'android' ? <KeyboardSpacer /> : null} */}
       </View>
     );
   }
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -246,11 +250,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
   },
   mapContainer: {
+    margin: 1,
     width: 250,
     height: 200,
     borderRadius: 13,
-    margin: 1,
-    //width: Dimensions.get('window').width,
-    //height: Dimensions.get('window').height,
   },
 });
